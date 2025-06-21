@@ -45,4 +45,24 @@ router.get("/url", authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+router.delete("/url/:id", authMiddleware, async (req: AuthRequest, res) => {
+  const { id } = req.params;
+
+  const url = await prisma.monitoredURL.findUnique({
+    where: { id }
+  });
+
+  if (!url || url.userId !== req.userId) {
+    res.status(404).json({ error: "URL not found or unauthorized" });
+    return;
+  }
+
+  await prisma.monitoredURL.update({
+    where: { id },
+    data: { deleted: true },
+  });
+
+  res.json({ message: "URL marked as deleted" });
+});
+
 export default router;
