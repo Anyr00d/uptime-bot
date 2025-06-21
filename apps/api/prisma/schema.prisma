@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -25,4 +24,15 @@ model MonitoredURL {
   userId    String
   createdAt DateTime  @default(now())
   deleted   Boolean   @default(false)
+  urlpings  URLPing[]
+}
+
+model URLPing {
+  id           String   @id @default(uuid())
+  monitoredUrl MonitoredURL @relation(fields: [monitoredUrlId], references: [id])
+  monitoredUrlId String
+  statusCode   Int?
+  responseTime Int?     // in milliseconds
+  isUp         Boolean
+  checkedAt    DateTime @default(now())
 }

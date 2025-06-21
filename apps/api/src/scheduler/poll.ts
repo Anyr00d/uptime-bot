@@ -1,5 +1,6 @@
 import axios from "axios";
 import { PrismaClient } from "@prisma/client";
+import { performance } from "perf_hooks";
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,7 @@ export async function pollAllUrls() {
   });
 
   for (const { id, url, headers } of urls) {
-    const start = Date.now();
+    const start = performance.now();
 
     try {
       const formattedHeaders =
@@ -22,11 +23,28 @@ export async function pollAllUrls() {
         timeout: 10000,
       });
 
-      const ms = Date.now() - start;
+      const ms = performance.now() - start;
       console.log(`✅ ${url} - ${res.status} (${ms}ms)`);
+
+      await prisma.uRLPing.create({
+        data: {
+          monitoredUrlId: id,
+          isUp: true,
+          statusCode: res.status,
+          responseTime: ms,
+        },
+      });
+
     } catch (err) {
-      const ms = Date.now() - start;
+      const ms = performance.now() - start;
       console.log(`❌ ${url} - DOWN (${ms}ms)`);
+      await prisma.uRLPing.create({
+        data: {
+          monitoredUrlId: id,
+          isUp: false,
+          responseTime: ms,
+        },
+      });
     }
   }
 }
