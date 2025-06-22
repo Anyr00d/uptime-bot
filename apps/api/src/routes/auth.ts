@@ -1,14 +1,13 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { PrismaClient } from "@prisma/client";
 import { generateToken } from "../utils/auth";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { AuthRequest } from "../types/AuthRequest";
 import { validate } from "../middleware/validate";
 import { loginSchema, signupSchema } from "../schemas/auth";
+import prisma from "../prismaclient";
 
 const router = Router();
-import prisma from "../prismaclient";
 
 router.post("/signup",validate(signupSchema), async (req: Request, res: Response) => {
   const { email, password } = req.body;
