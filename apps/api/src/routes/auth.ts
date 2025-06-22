@@ -8,7 +8,7 @@ import { validate } from "../middleware/validate";
 import { loginSchema, signupSchema } from "../schemas/auth";
 
 const router = Router();
-const prisma = new PrismaClient();
+import prisma from "../prismaclient";
 
 router.post("/signup",validate(signupSchema), async (req: Request, res: Response) => {
   const { email, password } = req.body;

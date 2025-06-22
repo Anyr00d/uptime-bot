@@ -1,8 +1,6 @@
 import axios from "axios";
-import { PrismaClient } from "@prisma/client";
 import { performance } from "perf_hooks";
-
-const prisma = new PrismaClient();
+import prisma from "../prismaclient";
 
 export async function pollAllUrls() {
   const urls = await prisma.monitoredURL.findMany({

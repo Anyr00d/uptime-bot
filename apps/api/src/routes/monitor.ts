@@ -1,14 +1,13 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { AuthRequest } from "../types/AuthRequest";
 import { validate } from "../middleware/validate";
 import { createUrlSchema, getMetricsSchema, getUrlSummarySchema } from "../schemas/url";
 import { ValidatedRequest } from "../types/ValidatedRequest";
 import {z} from "zod";
+import prisma from "../prismaclient";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.post("/url", authMiddleware, validate(createUrlSchema), async (req: AuthRequest, res) => {
   const { url, headers } = req.body;
