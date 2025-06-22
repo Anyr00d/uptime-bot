@@ -2,7 +2,8 @@ import { Router, Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { PrismaClient } from "@prisma/client";
 import { generateToken } from "../utils/auth";
-import { authMiddleware, AuthRequest } from "../middleware/authMiddleware";
+import { authMiddleware } from "../middleware/authMiddleware";
+import { AuthRequest } from "../types/AuthRequest";
 import { validate } from "../middleware/validate";
 import { loginSchema, signupSchema } from "../schemas/auth";
 

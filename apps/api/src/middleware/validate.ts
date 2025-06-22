@@ -1,15 +1,22 @@
+import { ZodSchema, z } from "zod";
 import { Request, Response, NextFunction } from "express";
-import { ZodSchema } from "zod";
+import { ValidatedRequest } from "../types/ValidatedRequest";
 
-export function validate(schema: ZodSchema<any>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.body);
-    if (!result.success) {
-      res.status(400).json({ error: result.error.flatten() });
-      return;
-    }
+export const validate = (schema: ZodSchema<any>) => (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const result = schema.safeParse({
+    body: req.body,
+    query: req.query,
+    params: req.params,
+  });
 
-    req.body = result.data; //validated
-    next();
-  };
-}
+  if (!result.success) {
+    res.status(400).json({ error: result.error.format() });
+    return;
+  }
+  (req as ValidatedRequest<z.infer<typeof schema>>).validated = result.data;
+  next();
+};

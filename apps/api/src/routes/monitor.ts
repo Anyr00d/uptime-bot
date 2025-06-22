@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
-import { authMiddleware, AuthRequest } from "../middleware/authMiddleware";
+import { authMiddleware } from "../middleware/authMiddleware";
+import { AuthRequest } from "../types/AuthRequest";
 import { validate } from "../middleware/validate";
-import { createUrlSchema } from "../schemas/url";
+import { createUrlSchema, getMetricsSchema } from "../schemas/url";
+import { ValidatedRequest } from "../types/ValidatedRequest";
+import {z} from "zod";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -63,6 +66,40 @@ router.delete("/url/:id", authMiddleware, async (req: AuthRequest, res) => {
   });
 
   res.json({ message: "URL marked as deleted" });
+  });
+
+
+
+router.get("/url/:id/metrics",authMiddleware,validate(getMetricsSchema),async (req, res) => {
+  const { userId } = req as AuthRequest;
+  const { validated } = req as ValidatedRequest<z.infer<typeof getMetricsSchema>>;
+  const urlId = validated.params.id;
+  const monitored = await prisma.monitoredURL.findFirst({
+    where: { id: urlId, userId: userId!, deleted: false },
+  });
+
+  if (!monitored) {
+    res.status(404).json({ error: "URL not found or unauthorized" });
+    return;
+  }
+
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+
+  const pings = await prisma.uRLPing.findMany({
+    where: {
+      monitoredUrlId: urlId,
+      checkedAt: { gte: twoDaysAgo },
+    },
+    orderBy: { checkedAt: "desc" },
+    select: {
+      checkedAt: true,
+      isUp: true,
+      statusCode: true,
+      responseTime: true,
+    },
+  });
+
+  res.json({ url: monitored.url, pings });
 });
 
 export default router;
