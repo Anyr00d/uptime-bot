@@ -12,3 +12,5 @@ export const getMetricsSchema = z.object({
     id: z.string().uuid(),
   }),
 });
+
+export const getUrlSummarySchema = getMetricsSchema;

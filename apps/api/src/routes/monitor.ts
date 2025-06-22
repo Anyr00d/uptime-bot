@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { AuthRequest } from "../types/AuthRequest";
 import { validate } from "../middleware/validate";
-import { createUrlSchema, getMetricsSchema } from "../schemas/url";
+import { createUrlSchema, getMetricsSchema, getUrlSummarySchema } from "../schemas/url";
 import { ValidatedRequest } from "../types/ValidatedRequest";
 import {z} from "zod";
 
@@ -101,5 +101,71 @@ router.get("/url/:id/metrics",authMiddleware,validate(getMetricsSchema),async (r
 
   res.json({ url: monitored.url, pings });
 });
+
+router.get("/url/:id/summary",authMiddleware,validate(getUrlSummarySchema), async (req, res) => {
+    const {userId}=req as AuthRequest;
+    const {validated} = req as ValidatedRequest<z.infer<typeof getUrlSummarySchema>>;
+    const urlId=validated.params.id;
+
+    // Verify URL belongs to this user
+    const url = await prisma.monitoredURL.findFirst({
+      where: { id: urlId, userId: userId!, deleted: false },
+    });
+
+    if (!url) {
+      res.status(404).json({ error: "URL not found or unauthorized" });
+      return;
+    }
+
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+
+    const pings = await prisma.uRLPing.findMany({
+      where: {
+        monitoredUrlId: urlId,
+        checkedAt: { gte: twoDaysAgo },
+      },
+      orderBy: { checkedAt: "desc" },
+    });
+
+    if (pings.length === 0) {
+      res.json({
+        uptimePercent: 0,
+        avgResponseTime: null,
+        latestStatus: null,
+        downtimeStreak: 0,
+      });
+      return;
+    }
+
+    //1)upcount
+    const upCount = pings.filter(p => p.isUp).length;
+    //2)avg response time
+    const validPings = pings.filter(p => p.responseTime !== null);
+    const avgResponseTime = validPings.length > 0
+    ? Math.round(validPings.reduce((sum, p) => sum + (p.responseTime as number), 0) / validPings.length)
+    : null;
+    //3)uptime %
+    const uptimePercent = Math.round((upCount / pings.length) * 100);
+    //4)latest ping
+    const latest = pings[0];
+    //5)if downtime now, what's the streak
+    let streak = 0;
+    for (const p of pings) {
+      if (p.isUp) break;
+      streak++;
+    }
+
+    res.json({
+      uptimePercent,
+      avgResponseTime,
+      latestStatus: {
+        isUp: latest.isUp,
+        statusCode: latest.statusCode ?? null,
+        checkedAt: latest.checkedAt,
+      },
+      downtimeStreak: streak,
+    });
+  }
+);
 
 export default router;
