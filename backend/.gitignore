@@ -1,6 +1,7 @@
 node_modules
 .env
-
+dist
+prisma/dev.db
 /generated/prisma
 # Ignore Postman environments
 *.postman_environment.json
