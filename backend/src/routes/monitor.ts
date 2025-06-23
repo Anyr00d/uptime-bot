@@ -48,7 +48,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
       },
       orderBy: { createdAt: "desc" },
     });
-
+    console.log(urls);
     res.json(urls);
   } catch (err) {
     console.error("Error fetching URLs:", err);

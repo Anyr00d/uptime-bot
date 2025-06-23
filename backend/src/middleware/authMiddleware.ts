@@ -8,6 +8,7 @@ export function authMiddleware(
   next: NextFunction
 ) {
   const token = req.cookies.token;
+  console.log(token);
   if (!token) {
     res.status(401).json({ error: "Unauthorized" });
     return;
